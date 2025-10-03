@@ -54,7 +54,7 @@
         </aside>
 
         <!-- Overlay for mobile -->
-        <div id="overlay" class="fixed inset-0 bg-black opacity-50 hidden z-30 md:hidden"></div>
+        <div id="overlay" class="fixed inset-0 bg-black opacity-50 hidden z-40 md:hidden"></div>
 
         <!-- Main Content -->
         <main class="flex-1 p-6 md:p-10 flex flex-col md:flex-row gap-6">
@@ -86,7 +86,6 @@
                     </select>
                 </div>
 
-                <!-- Add new category -->
                 <div id="addCategoryContainer" class="flex gap-2 items-center mt-2">
                     <input type="text" id="newCategory" placeholder="Enter new category"
                         class="flex-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -107,11 +106,11 @@
             </form>
 
             <!-- Recent Transactions -->
-            <div class="bg-white pb-20 p-6 md:p-6 shadow-lg rounded-lg flex-1 overflow-x-auto ">
+            <div class="bg-white p-6 shadow-lg rounded-lg flex-1 overflow-x-auto pb-28 md:pb-6">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-gray-700 font-semibold">Recent Expense</h3>
                 </div>
-                <table class="w-full border-collapse">
+                <table class="min-w-[600px] w-full border-collapse">
                     <thead>
                         <tr>
                             <th class="border p-2 text-left cursor-pointer" data-sort="date">Date</th>
@@ -155,6 +154,22 @@
         </div>
     </nav>
 
+    <!-- JS -->
+    <script>
+        const menuButton = document.getElementById('menuButton');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+
+        menuButton.addEventListener('click', () => {
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        });
+
+        overlay.addEventListener('click', () => {
+            sidebar.classList.add('-translate-x-full');
+            overlay.classList.add('hidden');
+        });
+    </script>
     <script type="module" src="expenses.js"></script>
 </body>
 
