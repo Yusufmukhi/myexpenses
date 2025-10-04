@@ -117,8 +117,7 @@ function updateTotals() {
   netWorth.textContent = `₹${(
     totals.income -
     totals.expenses +
-    savingsUsed +
-    totals.transactions
+    savingsUsed 
   ).toFixed(2)}`;
   currentMoney.textContent = `₹${(
     totals.income -
@@ -263,3 +262,4 @@ overlay?.addEventListener("click", () => {
   sidebar.classList.add("-translate-x-full");
   overlay.classList.add("hidden");
 });
+
