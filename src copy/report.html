@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Report - Expense Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="bg-gray-50 font-sans">
+
+    <!-- Mobile Header -->
+    <header class="bg-white shadow-md p-4 flex justify-between items-center md:hidden fixed top-0 left-0 right-0 z-50">
+        <button id="menuButton" class="flex flex-col justify-between h-6 w-8 focus:outline-none">
+            <span class="block h-0.5 w-full bg-gray-800"></span>
+            <span class="block h-0.5 w-full bg-gray-800"></span>
+            <span class="block h-0.5 w-full bg-gray-800"></span>
+        </button>
+        <h1 class="text-xl font-bold text-gray-800">Expense Tracker</h1>
+        <a href="login.html" class="logout bg-red-600 text-white px-3 py-1 rounded shadow hover:bg-red-700">Logout</a>
+    </header>
+
+    <div class="flex pt-16 md:pt-0">
+
+        <!-- Sidebar -->
+        <aside id="sidebar"
+            class="w-64 bg-white shadow-md h-screen fixed md:sticky top-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-50">
+            <div class="p-6">
+                <h1 class="text-2xl font-bold mb-8 text-gray-800">Expense Tracker</h1>
+                <nav class="space-y-4">
+                    <a href="index.html" class="flex items-center py-2 px-4 rounded hover:bg-gray-200">
+                        <i class="fas fa-tachometer-alt mr-3"></i> Dashboard
+                    </a>
+                    <a href="expenses.html" class="flex items-center py-2 px-4 rounded hover:bg-gray-200">
+                        <i class="fas fa-plus-circle mr-3"></i> Expenses
+                    </a>
+                    <a href="income.html" class="flex items-center py-2 px-4 rounded hover:bg-gray-200">
+                        <i class="fas fa-wallet mr-3"></i> Income
+                    </a>
+                    <a href="savings.html" class="flex items-center py-2 px-4 rounded hover:bg-gray-200">
+                        <i class="fas fa-piggy-bank mr-3"></i> Savings
+                    </a>
+                    <a href="transactions.html" class="flex items-center py-2 px-4 rounded hover:bg-gray-200">
+                        <i class="fas fa-exchange-alt mr-3"></i> Transactions
+                    </a>
+                    <a href="report.html" class="flex items-center py-2 px-4 rounded bg-gray-200">
+                        <i class="fas fa-chart-pie mr-3"></i> Report
+                    </a>
+                    <button
+                        class="logout flex items-center py-2 px-4 rounded hover:bg-gray-200 text-red-600 w-full text-left">
+                        <i class="fas fa-sign-out-alt mr-3"></i> Logout
+                    </button>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Overlay -->
+        <div id="overlay" class="fixed inset-0 bg-black opacity-50 hidden z-30 md:hidden"></div>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-6 md:ml-64">
+            <!-- Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="card bg-blue-100 p-4 rounded-lg shadow cursor-pointer" data-type="income">
+                    <h2 class="text-lg font-semibold">Income</h2>
+                    <p id="incomeAmount" class="text-xl font-bold">₹0</p>
+                </div>
+                <div class="card bg-red-100 p-4 rounded-lg shadow cursor-pointer" data-type="expenses">
+                    <h2 class="text-lg font-semibold">Expenses</h2>
+                    <p id="expensesAmount" class="text-xl font-bold">₹0</p>
+                </div>
+                <div class="card bg-green-100 p-4 rounded-lg shadow cursor-pointer" data-type="savings">
+                    <h2 class="text-lg font-semibold">Savings</h2>
+                    <p id="savingsAmount" class="text-xl font-bold">₹0</p>
+                </div>
+                <div class="card bg-yellow-100 p-4 rounded-lg shadow cursor-pointer" data-type="transactions">
+                    <h2 class="text-lg font-semibold">Transactions</h2>
+                    <p id="transactionsAmount" class="text-xl font-bold">₹0</p>
+                </div>
+            </div>
+
+            <!-- Chart Section -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold">Report</h3>
+                    <select id="reportType" class="border p-2 rounded">
+                        <option value="income">Income</option>
+                        <option value="expenses">Expenses</option>
+                        <option value="savings">Savings</option>
+                        <option value="transactions">Transactions</option>
+                    </select>
+                </div>
+                <div class="flex flex-col md:flex-row">
+                    <canvas id="chartCanvas" class="flex-1 max-h-80"></canvas>
+                    <div id="chartLegend" class="ml-6 text-sm"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Bottom Nav -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white shadow-lg md:hidden z-50">
+        <div class="flex justify-around items-center py-3">
+            <a href="index.html" class="flex flex-col items-center text-gray-600">
+                <i class="fas fa-tachometer-alt mb-1"></i>
+                <span class="text-xs">Dashboard</span>
+            </a>
+            <a href="expenses.html" class="flex flex-col items-center text-gray-600">
+                <i class="fas fa-plus-circle mb-1"></i>
+                <span class="text-xs">Expenses</span>
+            </a>
+            <a href="income.html" class="flex flex-col items-center text-gray-600">
+                <i class="fas fa-wallet mb-1"></i>
+                <span class="text-xs">Income</span>
+            </a>
+            <a href="savings.html" class="flex flex-col items-center text-gray-600">
+                <i class="fas fa-piggy-bank mb-1"></i>
+                <span class="text-xs">Savings</span>
+            </a>
+            <a href="transactions.html" class="flex flex-col items-center text-gray-600">
+                <i class="fas fa-exchange-alt mb-1"></i>
+                <span class="text-xs">Transactions</span>
+            </a>
+        </div>
+    </nav>
+
+    <script src="report.js" type="module"></script>
+</body>
+
+</html>

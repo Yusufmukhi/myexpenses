@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup Expenses Collection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="flex items-center justify-center min-h-screen bg-gray-100">
+    <div class="bg-white p-6 rounded shadow-md text-center">
+        <h2 class="text-2xl font-bold mb-4">Setup Expenses Collection</h2>
+        <button id="setupBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Create Default
+            Collection</button>
+        <p id="status" class="mt-4 text-gray-700"></p>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyA1MhwEBTDrgYc2ywKJnuyAIw5Q6qS8Rcw",
+            authDomain: "expensestracker-36711.firebaseapp.com",
+            projectId: "expensestracker-36711",
+            storageBucket: "expensestracker-36711.appspot.com",
+            messagingSenderId: "111920440061",
+            appId: "1:111920440061:web:3af7eff29b1896280ad494",
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const setupBtn = document.getElementById("setupBtn");
+        const status = document.getElementById("status");
+
+        setupBtn.addEventListener("click", async () => {
+            status.textContent = "Creating default collection...";
+
+            try {
+                // Add a default document to "expenses" collection
+                await addDoc(collection(db, "expenses"), {
+                    uid: "default",
+                    date: new Date().toISOString().split("T")[0],
+                    amount: 0,
+                    category: "Default",
+                    description: "Initial default entry",
+                    createdAt: serverTimestamp()
+                });
+
+                status.textContent = "✅ Expenses collection created with default entry!";
+            } catch (err) {
+                console.error(err);
+                status.textContent = "❌ Failed to create collection: " + err.message;
+            }
+        });
+    </script>
+</body>
+
+</html>
