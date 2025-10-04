@@ -260,12 +260,4 @@ document.querySelectorAll(".logout").forEach((btn) => {
     window.location.href = "login.html";
   });
 });
-menuButton?.addEventListener("click", () => {
-  sidebar.classList.toggle("-translate-x-full");
-  overlay.classList.toggle("hidden");
-});
 
-overlay?.addEventListener("click", () => {
-  sidebar.classList.add("-translate-x-full");
-  overlay.classList.add("hidden");
-});
