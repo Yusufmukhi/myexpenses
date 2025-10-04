@@ -1,0 +1,36 @@
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+    <!-- Income Card -->
+    <div class="bg-white shadow-lg rounded-lg p-6 hover:shadow-xl transition block">
+        <h3 class="text-gray-500 font-medium mb-2">Cureent Money</h3>
+        <p id="currentMoney" class="text-2xl font-bold text-green-600 mb-4">₹0</p>
+        <ul id="recentIncome" class="text-sm space-y-1 max-h-40 overflow-y-auto"></ul>
+    </div>
+    <div class="bg-white shadow-lg rounded-lg p-6 hover:shadow-xl transition block">
+        <h3 class="text-gray-500 font-medium mb-2">Net Worth</h3>
+        <p id="netWorth" class="text-2xl font-bold text-green-600 mb-4">₹0</p>
+        <ul id="recentIncome" class="text-sm space-y-1 max-h-40 overflow-y-auto"></ul>
+    </div>
+    <div class="bg-white shadow-lg rounded-lg p-6 hover:shadow-xl transition block">
+        <h3 class="text-gray-500 font-medium mb-2">Total Income</h3>
+        <p id="totalIncome" class="text-2xl font-bold text-green-600 mb-4">₹0</p>
+        <ul id="recentIncome" class="text-sm space-y-1 max-h-40 overflow-y-auto"></ul>
+    </div>
+    <!-- Expenses Card -->
+    <div class="bg-white shadow-lg rounded-lg p-6 hover:shadow-xl transition block">
+        <h3 class="text-gray-500 font-medium mb-2">Total Expenses</h3>
+        <p id="totalExpenses" class="text-2xl font-bold text-red-600 mb-4">₹0</p>
+        <ul id="recentExpenses" class="text-sm space-y-1 max-h-40 overflow-y-auto"></ul>
+    </div>
+    <!-- Savings Card -->
+    <div class="bg-white shadow-lg rounded-lg p-6 hover:shadow-xl transition block">
+        <h3 class="text-gray-500 font-medium mb-2">Total Savings</h3>
+        <p id="totalSavings" class="text-2xl font-bold text-blue-600 mb-4">₹0</p>
+        <ul id="recentSavings" class="text-sm space-y-1 max-h-40 overflow-y-auto"></ul>
+    </div>
+    <!-- Transactions Card -->
+    <div class="bg-white shadow-lg rounded-lg p-6 hover:shadow-xl transition block">
+        <h3 class="text-gray-500 font-medium mb-2">Total Transactions</h3>
+        <p id="totalTransactions" class="text-2xl font-bold text-purple-600 mb-4">₹0</p>
+        <ul id="recentTransactions" class="text-sm space-y-1 max-h-40 overflow-y-auto"></ul>
+    </div>
+</div>
