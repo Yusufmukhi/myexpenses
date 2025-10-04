@@ -37,7 +37,7 @@ const dateInput = document.getElementById("date");
 const amountInput = document.getElementById("amount");
 const categorySelect = document.getElementById("category");
 const descriptionInput = document.getElementById("description");
-const transactionsTable = document.getElementById("transactions");
+const transactionsTable = document.getElementById("expenseList");
 const totalExpenseSpan = document.getElementById("totalExpense");
 const addCategoryBtn = document.getElementById("addCategoryBtn");
 const newCategoryInput = document.getElementById("newCategory");
@@ -223,3 +223,4 @@ document.querySelectorAll(".logout").forEach((btn) => {
     }
   });
 });
+
