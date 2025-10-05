@@ -32,7 +32,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 // ---------------- DOM Elements ----------------
-const form = document.getElementById("form");
+const form = document.getElementById("expenseForm");
 const dateInput = document.getElementById("date");
 const amountInput = document.getElementById("amount");
 const categorySelect = document.getElementById("category");
@@ -223,4 +223,5 @@ document.querySelectorAll(".logout").forEach((btn) => {
     }
   });
 });
+
 
