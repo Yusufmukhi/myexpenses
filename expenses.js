@@ -32,24 +32,24 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 // ---------------- DOM Elements ----------------
-const form = document.getElementById("expenseForm"); // ✅ fixed ID
+const form = document.getElementById("expenseForm");
 const dateInput = document.getElementById("date");
 const amountInput = document.getElementById("amount");
 const categorySelect = document.getElementById("category");
 const descriptionInput = document.getElementById("description");
-const expenseList = document.getElementById("expenseList"); // ✅ renamed
+
 const totalExpenseSpan = document.getElementById("totalExpense");
-const addCategoryBtn = document.getElementById("submit");
+const addCategoryBtn = document.getElementById("addCategoryBtn");
 const newCategoryInput = document.getElementById("newCategory");
+const transactionsTable = document.getElementById("expenseList");
 
 const menuButton = document.getElementById("menuButton");
 const sidebar = document.getElementById("sidebar");
 const overlay = document.getElementById("overlay");
 
 let currentUser = null;
-let currentSort = { field: "date", asc: false };
+let currentSort = { field: "date", asc: false }; // default sorting
 
-// Default date to today
 dateInput.value = new Date().toISOString().split("T")[0];
 
 // ---------------- Auth ----------------
@@ -59,7 +59,7 @@ onAuthStateChanged(auth, (user) => {
     return;
   }
   currentUser = user;
-  loadExpenses();
+  loadTransactions();
   loadCategories();
 });
 
@@ -72,6 +72,44 @@ form?.addEventListener("submit", async (e) => {
   const description = descriptionInput.value;
 
   if (!date || !amount || !category) return alert("Please fill all fields");
+  const incomeSnap = await getDocs(
+    query(collection(db, "incomes"), where("uid", "==", currentUser.uid))
+  );
+  const totalIncome = incomeSnap.docs.reduce((a, d) => a + d.data().amount, 0);
+
+  const expenseSnap = await getDocs(
+    query(collection(db, "expenses"), where("uid", "==", currentUser.uid))
+  );
+  const totalExpenses = expenseSnap.docs.reduce(
+    (a, d) => a + d.data().amount,
+    0
+  );
+
+  const savingsSnap = await getDocs(
+    query(collection(db, "savings"), where("uid", "==", currentUser.uid))
+  );
+  const savingsOnlyTotal = savingsSnap.docs
+    .filter((d) => d.data().mode === "savingsOnly")
+    .reduce((a, d) => a + d.data().amount, 0);
+
+  const transactionsSnap = await getDocs(
+    query(collection(db, "transactions"), where("uid", "==", currentUser.uid))
+  );
+  const pendingTaken = transactionsSnap.docs
+    .filter((d) => !d.data().completed && d.data().type === "taken")
+    .reduce((a, d) => a + d.data().amount, 0);
+  const pendingGiven = transactionsSnap.docs
+    .filter((d) => !d.data().completed && d.data().type === "given")
+    .reduce((a, d) => a + d.data().amount, 0);
+
+  const netPendingTransactions = pendingTaken - pendingGiven;
+
+  const currentMoney =
+    totalIncome - totalExpenses - savingsOnlyTotal + netPendingTransactions;
+  if (currentMoney <= amount) {
+    alert(`You only Have Balance of ₹${currentMoney}`);
+    return;
+  }
 
   try {
     await addDoc(collection(db, "expenses"), {
@@ -84,15 +122,15 @@ form?.addEventListener("submit", async (e) => {
     });
     form.reset();
     dateInput.value = new Date().toISOString().split("T")[0];
-    loadExpenses();
+    loadTransactions();
   } catch (err) {
     console.error(err);
     alert("Error: " + err.message);
   }
 });
 
-// ---------------- Load Expenses ----------------
-async function loadExpenses() {
+// ---------------- Load Transactions ----------------
+async function loadTransactions() {
   if (!currentUser) return;
 
   try {
@@ -103,27 +141,26 @@ async function loadExpenses() {
     );
 
     const snapshot = await getDocs(q);
-    expenseList.innerHTML = "";
+    transactionsTable.innerHTML = "";
     let total = 0;
 
     snapshot.forEach((docSnap) => {
       const exp = docSnap.data();
       total += exp.amount;
 
-      const li = document.createElement("li");
-      li.classList.add("py-2", "flex", "justify-between", "items-center", "border-b");
-      li.innerHTML = `
-        <div>
-          <p class="font-medium">${exp.category}</p>
-          <p class="text-sm text-gray-500">${exp.date}</p>
-          <p class="text-gray-600">${exp.description || ""}</p>
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="font-semibold text-red-600">₹${exp.amount.toFixed(2)}</span>
-          <button data-id="${docSnap.id}" class="deleteBtn bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700">Delete</button>
-        </div>
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td class="border p-2">${exp.date}</td>
+        <td class="border p-2">₹${exp.amount.toFixed(2)}</td>
+        <td class="border p-2">${exp.category}</td>
+        <td class="border p-2">${exp.description || ""}</td>
+        <td class="border p-2">
+            <button data-id="${
+              docSnap.id
+            }" class="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700 deleteBtn">Delete</button>
+        </td>
       `;
-      expenseList.appendChild(li);
+      transactionsTable.appendChild(row);
     });
 
     totalExpenseSpan.textContent = `₹${total.toFixed(2)}`;
@@ -135,7 +172,7 @@ async function loadExpenses() {
         if (confirm("Are you sure you want to delete this expense?")) {
           try {
             await deleteDoc(doc(db, "expenses", id));
-            loadExpenses();
+            loadTransactions();
           } catch (err) {
             console.error(err);
             alert("Failed to delete: " + err.message);
@@ -145,11 +182,24 @@ async function loadExpenses() {
     });
   } catch (err) {
     console.error(err);
-    alert("Error loading expenses: " + err.message);
+    alert("Error loading transactions: " + err.message);
   }
 }
 
-// ---------------- Add New Category ----------------
+// ---------------- Sorting ----------------
+document.querySelectorAll("th[data-sort]").forEach((th) => {
+  th.addEventListener("click", () => {
+    const field = th.dataset.sort;
+    if (currentSort.field === field) currentSort.asc = !currentSort.asc;
+    else {
+      currentSort.field = field;
+      currentSort.asc = true;
+    }
+    loadTransactions();
+  });
+});
+
+// ---------------- Add Category ----------------
 addCategoryBtn?.addEventListener("click", async () => {
   const newCat = newCategoryInput.value.trim();
   if (!newCat) return alert("Enter a category name");
@@ -174,7 +224,8 @@ async function loadCategories() {
   if (!currentUser) return;
 
   try {
-    const q = query(collection(db, "categories"), where("uid", "==", currentUser.uid));
+    const catCol = collection(db, "categories");
+    const q = query(catCol, where("uid", "==", currentUser.uid));
     const snapshot = await getDocs(q);
 
     categorySelect.innerHTML = `<option value="">Select Category</option>`;
@@ -198,9 +249,6 @@ overlay?.addEventListener("click", () => {
   overlay.classList.add("hidden");
 });
 
-
-
-
 // ---------------- Logout ----------------
 document.querySelectorAll(".logout").forEach((btn) => {
   btn.addEventListener("click", async (e) => {
@@ -214,6 +262,3 @@ document.querySelectorAll(".logout").forEach((btn) => {
     }
   });
 });
-
-
-
