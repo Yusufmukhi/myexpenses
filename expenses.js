@@ -32,14 +32,14 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 // ---------------- DOM Elements ----------------
-const form = document.getElementById("expenseForm");
+const form = document.getElementById("expenseForm"); // ✅ fixed ID
 const dateInput = document.getElementById("date");
 const amountInput = document.getElementById("amount");
 const categorySelect = document.getElementById("category");
 const descriptionInput = document.getElementById("description");
-const transactionsTable = document.getElementById("expenseList");
+const expenseList = document.getElementById("expenseList"); // ✅ renamed
 const totalExpenseSpan = document.getElementById("totalExpense");
-const addCategoryBtn = document.getElementById("addCategoryBtn");
+const addCategoryBtn = document.getElementById("submit");
 const newCategoryInput = document.getElementById("newCategory");
 
 const menuButton = document.getElementById("menuButton");
@@ -47,8 +47,9 @@ const sidebar = document.getElementById("sidebar");
 const overlay = document.getElementById("overlay");
 
 let currentUser = null;
-let currentSort = { field: "date", asc: false }; // default sorting
+let currentSort = { field: "date", asc: false };
 
+// Default date to today
 dateInput.value = new Date().toISOString().split("T")[0];
 
 // ---------------- Auth ----------------
@@ -58,7 +59,7 @@ onAuthStateChanged(auth, (user) => {
     return;
   }
   currentUser = user;
-  loadTransactions();
+  loadExpenses();
   loadCategories();
 });
 
@@ -83,15 +84,15 @@ form?.addEventListener("submit", async (e) => {
     });
     form.reset();
     dateInput.value = new Date().toISOString().split("T")[0];
-    loadTransactions();
+    loadExpenses();
   } catch (err) {
     console.error(err);
     alert("Error: " + err.message);
   }
 });
 
-// ---------------- Load Transactions ----------------
-async function loadTransactions() {
+// ---------------- Load Expenses ----------------
+async function loadExpenses() {
   if (!currentUser) return;
 
   try {
@@ -102,26 +103,27 @@ async function loadTransactions() {
     );
 
     const snapshot = await getDocs(q);
-    transactionsTable.innerHTML = "";
+    expenseList.innerHTML = "";
     let total = 0;
 
     snapshot.forEach((docSnap) => {
       const exp = docSnap.data();
       total += exp.amount;
 
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td class="border p-2">${exp.date}</td>
-        <td class="border p-2">₹${exp.amount.toFixed(2)}</td>
-        <td class="border p-2">${exp.category}</td>
-        <td class="border p-2">${exp.description || ""}</td>
-        <td class="border p-2">
-            <button data-id="${
-              docSnap.id
-            }" class="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700 deleteBtn">Delete</button>
-        </td>
+      const li = document.createElement("li");
+      li.classList.add("py-2", "flex", "justify-between", "items-center", "border-b");
+      li.innerHTML = `
+        <div>
+          <p class="font-medium">${exp.category}</p>
+          <p class="text-sm text-gray-500">${exp.date}</p>
+          <p class="text-gray-600">${exp.description || ""}</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="font-semibold text-red-600">₹${exp.amount.toFixed(2)}</span>
+          <button data-id="${docSnap.id}" class="deleteBtn bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700">Delete</button>
+        </div>
       `;
-      transactionsTable.appendChild(row);
+      expenseList.appendChild(li);
     });
 
     totalExpenseSpan.textContent = `₹${total.toFixed(2)}`;
@@ -133,7 +135,7 @@ async function loadTransactions() {
         if (confirm("Are you sure you want to delete this expense?")) {
           try {
             await deleteDoc(doc(db, "expenses", id));
-            loadTransactions();
+            loadExpenses();
           } catch (err) {
             console.error(err);
             alert("Failed to delete: " + err.message);
@@ -143,24 +145,11 @@ async function loadTransactions() {
     });
   } catch (err) {
     console.error(err);
-    alert("Error loading transactions: " + err.message);
+    alert("Error loading expenses: " + err.message);
   }
 }
 
-// ---------------- Sorting ----------------
-document.querySelectorAll("th[data-sort]").forEach((th) => {
-  th.addEventListener("click", () => {
-    const field = th.dataset.sort;
-    if (currentSort.field === field) currentSort.asc = !currentSort.asc;
-    else {
-      currentSort.field = field;
-      currentSort.asc = true;
-    }
-    loadTransactions();
-  });
-});
-
-// ---------------- Add Category ----------------
+// ---------------- Add New Category ----------------
 addCategoryBtn?.addEventListener("click", async () => {
   const newCat = newCategoryInput.value.trim();
   if (!newCat) return alert("Enter a category name");
@@ -185,8 +174,7 @@ async function loadCategories() {
   if (!currentUser) return;
 
   try {
-    const catCol = collection(db, "categories");
-    const q = query(catCol, where("uid", "==", currentUser.uid));
+    const q = query(collection(db, "categories"), where("uid", "==", currentUser.uid));
     const snapshot = await getDocs(q);
 
     categorySelect.innerHTML = `<option value="">Select Category</option>`;
@@ -210,6 +198,9 @@ overlay?.addEventListener("click", () => {
   overlay.classList.add("hidden");
 });
 
+
+
+
 // ---------------- Logout ----------------
 document.querySelectorAll(".logout").forEach((btn) => {
   btn.addEventListener("click", async (e) => {
@@ -223,5 +214,6 @@ document.querySelectorAll(".logout").forEach((btn) => {
     }
   });
 });
+
 
 
