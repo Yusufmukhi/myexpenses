@@ -1,3 +1,4 @@
+// ---------------- Firebase Imports ----------------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getAuth,
@@ -32,37 +33,37 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 // ---------------- DOM Elements ----------------
-const form = document.getElementById("form");
+const form = document.getElementById("incomeForm");
 const dateInput = document.getElementById("date");
 const amountInput = document.getElementById("amount");
 const sourceSelect = document.getElementById("source");
 const customSourceInput = document.getElementById("newSource");
 const addSourceBtn = document.getElementById("addSourceBtn");
 const descriptionInput = document.getElementById("description");
-const transactionsTbody = document.getElementById("transactions");
+const incomeList = document.getElementById("incomeList");
 const totalIncomeSpan = document.getElementById("totalIncome");
-const viewAllBtn = document.getElementById("viewAllBtn");
+const sortSelect = document.getElementById("sortSelect");
 
-let currentUser = null;
-let sortField = "createdAt"; // default sort by latest created
-let sortAsc = false;
-
-// ---------------- Sidebar toggle ----------------
 const menuButton = document.getElementById("menuButton");
 const sidebar = document.getElementById("sidebar");
 const overlay = document.getElementById("overlay");
 
+let currentUser = null;
+let sortField = "createdAt";
+let sortAsc = false;
+
+// ---------------- Sidebar toggle ----------------
 menuButton?.addEventListener("click", () => {
-  sidebar.classList.toggle("-translate-x-full"); // toggle sidebar
-  overlay.classList.toggle("hidden"); // toggle overlay
+  sidebar.classList.toggle("-translate-x-full");
+  overlay.classList.toggle("hidden");
 });
 
 overlay?.addEventListener("click", () => {
-  sidebar.classList.add("-translate-x-full"); // hide sidebar
-  overlay.classList.add("hidden"); // hide overlay
+  sidebar.classList.add("-translate-x-full");
+  overlay.classList.add("hidden");
 });
 
-// ---------------- Auth state ----------------
+// ---------------- Auth State ----------------
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     window.location.href = "login.html";
@@ -71,17 +72,17 @@ onAuthStateChanged(auth, async (user) => {
   currentUser = user;
   dateInput.value = new Date().toISOString().split("T")[0];
   await loadIncomeSources();
-  await loadTransactions();
+  await loadIncomes();
 });
 
-// ---------------- Add Source ----------------
+// ---------------- Add New Source ----------------
 addSourceBtn?.addEventListener("click", async () => {
   const newSource = customSourceInput.value.trim();
   if (!newSource) return alert("Enter a source name");
 
   try {
     await addDoc(collection(db, "incomeSources"), {
-      uid: currentUser.uid, // ✅ add uid for rules
+      uid: currentUser.uid,
       name: newSource,
       createdAt: new Date(),
     });
@@ -94,7 +95,7 @@ addSourceBtn?.addEventListener("click", async () => {
   }
 });
 
-// ---------------- Load sources ----------------
+// ---------------- Load Income Sources ----------------
 async function loadIncomeSources() {
   const q = query(
     collection(db, "incomeSources"),
@@ -103,9 +104,10 @@ async function loadIncomeSources() {
   );
   const snapshot = await getDocs(q);
 
-  // reset options
+  // Reset dropdown
   sourceSelect.innerHTML = '<option value="">Select Source</option>';
 
+  // Append saved sources
   snapshot.forEach((docSnap) => {
     const src = docSnap.data();
     const option = document.createElement("option");
@@ -114,27 +116,25 @@ async function loadIncomeSources() {
     sourceSelect.appendChild(option);
   });
 
-  // always keep "other"
+  // Keep "Other" always at last
   const otherOption = document.createElement("option");
   otherOption.value = "other";
   otherOption.textContent = "Other";
   sourceSelect.appendChild(otherOption);
 }
 
-// ---------------- Show custom source input ----------------
+// ---------------- Show Custom Source Input ----------------
 sourceSelect?.addEventListener("change", () => {
-  if (sourceSelect.value === "other") {
-    customSourceInput.classList.remove("hidden");
-    addSourceBtn.classList.remove("hidden");
-  } else {
-    customSourceInput.classList.add("hidden");
-    addSourceBtn.classList.add("hidden");
-  }
+  const showCustom = sourceSelect.value === "other";
+  customSourceInput.classList.toggle("hidden", !showCustom);
+  addSourceBtn.classList.toggle("hidden", !showCustom);
 });
 
 // ---------------- Add Income ----------------
 form?.addEventListener("submit", async (e) => {
   e.preventDefault();
+  if (!currentUser) return alert("Please login first.");
+
   const date = dateInput.value;
   const amount = parseFloat(amountInput.value);
   const source =
@@ -143,11 +143,12 @@ form?.addEventListener("submit", async (e) => {
       : sourceSelect.value;
   const description = descriptionInput.value;
 
-  if (!date || !amount || !source) return alert("Fill all required fields");
+  if (!date || !amount || !source)
+    return alert("Please fill all required fields.");
 
   try {
     await addDoc(collection(db, "incomes"), {
-      uid: currentUser.uid, // ✅ add uid for rules
+      uid: currentUser.uid,
       date,
       amount,
       source,
@@ -157,77 +158,81 @@ form?.addEventListener("submit", async (e) => {
 
     form.reset();
     dateInput.value = new Date().toISOString().split("T")[0];
-    await loadIncomeSources();
-    await loadTransactions();
+    await loadIncomes();
   } catch (err) {
     console.error("Add income error:", err);
     alert("Failed to add income");
   }
 });
 
-// ---------------- Load Transactions ----------------
-async function loadTransactions(limit = 5) {
+// ---------------- Load Incomes ----------------
+async function loadIncomes() {
+  if (!currentUser) return;
   const q = query(
     collection(db, "incomes"),
-    where("uid", "==", currentUser.uid), // ✅ only user's data
+    where("uid", "==", currentUser.uid),
     orderBy(sortField, sortAsc ? "asc" : "desc")
   );
   const snapshot = await getDocs(q);
 
-  transactionsTbody.innerHTML = "";
+  incomeList.innerHTML = "";
   let total = 0;
-  let count = 0;
 
   snapshot.forEach((docSnap) => {
-    if (limit !== Infinity && count >= limit) return;
-    count++;
     const income = docSnap.data();
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td class="border p-2">${income.date}</td>
-      <td class="border p-2">₹${income.amount.toFixed(2)}</td>
-      <td class="border p-2">${income.source}</td>
-      <td class="border p-2">${income.description || ""}</td>
-      <td class="border p-2">
-        <button class="deleteBtn bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700" data-id="${
-          docSnap.id
-        }">Delete</button>
-      </td>
+    const li = document.createElement("li");
+    li.className =
+      "py-2 flex justify-between items-center text-sm sm:text-base";
+    li.innerHTML = `
+      <div>
+        <p class="font-medium text-gray-800">₹${income.amount.toFixed(2)}</p>
+        <p class="text-gray-500">${income.source} • ${income.date}</p>
+        ${
+          income.description
+            ? `<p class="text-gray-400">${income.description}</p>`
+            : ""
+        }
+      </div>
+      <button class="deleteBtn text-red-600 hover:text-red-800 text-sm" data-id="${
+        docSnap.id
+      }">
+        Delete
+      </button>
     `;
-    transactionsTbody.appendChild(tr);
+    incomeList.appendChild(li);
     total += income.amount;
   });
 
   totalIncomeSpan.textContent = `₹${total.toFixed(2)}`;
 
-  // Delete
-  transactionsTbody.querySelectorAll(".deleteBtn").forEach((btn) => {
+  // Delete Functionality
+  incomeList.querySelectorAll(".deleteBtn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       try {
         await deleteDoc(doc(db, "incomes", btn.dataset.id));
-        await loadTransactions(limit);
+        await loadIncomes();
       } catch (err) {
         console.error("Delete error:", err);
-        alert("Failed to delete, maybe not your document.");
+        alert("Failed to delete income (check rules).");
       }
     });
   });
 }
 
-// ---------------- View all ----------------
-viewAllBtn?.addEventListener("click", () => loadTransactions(Infinity));
-
 // ---------------- Sorting ----------------
-document.querySelectorAll(".sortBtn").forEach((th) => {
-  th.addEventListener("click", async () => {
-    const field = th.dataset.field;
-    if (sortField === field) sortAsc = !sortAsc;
-    else {
-      sortField = field;
-      sortAsc = true;
-    }
-    await loadTransactions();
-  });
+sortSelect?.addEventListener("change", async () => {
+  const value = sortSelect.value;
+  if (value === "recent") {
+    sortField = "createdAt";
+    sortAsc = false;
+  } else if (value === "amount") {
+    sortField = "amount";
+    sortAsc = false;
+  } else if (value === "source") {
+    sortField = "source";
+    sortAsc = true;
+  }
+  await loadIncomes();
 });
 
 // ---------------- Logout ----------------
