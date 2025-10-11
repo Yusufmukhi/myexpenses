@@ -10,7 +10,6 @@ import {
   addDoc,
   query,
   where,
-  orderBy,
   getDocs,
   deleteDoc,
   doc,
@@ -37,18 +36,18 @@ const dateInput = document.getElementById("date");
 const amountInput = document.getElementById("amount");
 const categorySelect = document.getElementById("category");
 const descriptionInput = document.getElementById("description");
-
-const totalExpenseSpan = document.getElementById("totalExpense");
 const addCategoryBtn = document.getElementById("addCategoryBtn");
 const newCategoryInput = document.getElementById("newCategory");
+const newCategoryContainer = document.getElementById("newCategoryContainer");
 const transactionsTable = document.getElementById("expenseList");
-
+const totalExpenseSpan = document.getElementById("totalExpense");
+const sortSelect = document.getElementById("sortSelect");
 const menuButton = document.getElementById("menuButton");
 const sidebar = document.getElementById("sidebar");
 const overlay = document.getElementById("overlay");
 
 let currentUser = null;
-let currentSort = { field: "date", asc: false }; // default sorting
+let expenses = [];
 
 dateInput.value = new Date().toISOString().split("T")[0];
 
@@ -71,7 +70,9 @@ form?.addEventListener("submit", async (e) => {
   const category = categorySelect.value;
   const description = descriptionInput.value;
 
-  if (!date || !amount || !category) return alert("Please fill all fields");
+  if (!date || !amount || !category) return alert("Please fill all fields.");
+
+  // ✅ Calculate current money from Firestore
   const incomeSnap = await getDocs(
     query(collection(db, "incomes"), where("uid", "==", currentUser.uid))
   );
@@ -103,11 +104,11 @@ form?.addEventListener("submit", async (e) => {
     .reduce((a, d) => a + d.data().amount, 0);
 
   const netPendingTransactions = pendingTaken - pendingGiven;
-
   const currentMoney =
     totalIncome - totalExpenses - savingsOnlyTotal + netPendingTransactions;
+
   if (currentMoney <= amount) {
-    alert(`You only Have Balance of ₹${currentMoney}`);
+    alert(`You only have a balance of ₹${currentMoney.toFixed(2)}.`);
     return;
   }
 
@@ -133,73 +134,82 @@ form?.addEventListener("submit", async (e) => {
 async function loadTransactions() {
   if (!currentUser) return;
 
-  try {
-    const q = query(
-      collection(db, "expenses"),
-      where("uid", "==", currentUser.uid),
-      orderBy(currentSort.field, currentSort.asc ? "asc" : "desc")
-    );
+  const q = query(
+    collection(db, "expenses"),
+    where("uid", "==", currentUser.uid)
+  );
+  const snapshot = await getDocs(q);
+  expenses = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
 
-    const snapshot = await getDocs(q);
-    transactionsTable.innerHTML = "";
-    let total = 0;
-
-    snapshot.forEach((docSnap) => {
-      const exp = docSnap.data();
-      total += exp.amount;
-
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td class="border p-2">${exp.date}</td>
-        <td class="border p-2">₹${exp.amount.toFixed(2)}</td>
-        <td class="border p-2">${exp.category}</td>
-        <td class="border p-2">${exp.description || ""}</td>
-        <td class="border p-2">
-            <button data-id="${
-              docSnap.id
-            }" class="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700 deleteBtn">Delete</button>
-        </td>
-      `;
-      transactionsTable.appendChild(row);
-    });
-
-    totalExpenseSpan.textContent = `₹${total.toFixed(2)}`;
-
-    // Attach delete event
-    document.querySelectorAll(".deleteBtn").forEach((btn) => {
-      btn.addEventListener("click", async (e) => {
-        const id = e.target.dataset.id;
-        if (confirm("Are you sure you want to delete this expense?")) {
-          try {
-            await deleteDoc(doc(db, "expenses", id));
-            loadTransactions();
-          } catch (err) {
-            console.error(err);
-            alert("Failed to delete: " + err.message);
-          }
-        }
-      });
-    });
-  } catch (err) {
-    console.error(err);
-    alert("Error loading transactions: " + err.message);
-  }
+  renderTransactions();
 }
 
-// ---------------- Sorting ----------------
-document.querySelectorAll("th[data-sort]").forEach((th) => {
-  th.addEventListener("click", () => {
-    const field = th.dataset.sort;
-    if (currentSort.field === field) currentSort.asc = !currentSort.asc;
-    else {
-      currentSort.field = field;
-      currentSort.asc = true;
-    }
-    loadTransactions();
+// ---------------- Render Transactions ----------------
+function renderTransactions() {
+  // Sort according to dropdown
+  const sortValue = sortSelect.value;
+  if (sortValue === "amount") {
+    expenses.sort((a, b) => b.amount - a.amount);
+  } else if (sortValue === "category") {
+    expenses.sort((a, b) => a.category.localeCompare(b.category));
+  } else {
+    // Sort by recent date
+    expenses.sort((a, b) => new Date(b.date) - new Date(a.date));
+  }
+
+  transactionsTable.innerHTML = "";
+  let total = 0;
+
+  expenses.forEach((exp) => {
+    total += exp.amount;
+    const li = document.createElement("li");
+    li.className = "py-2 flex justify-between items-center";
+    li.innerHTML = `
+      <div>
+        <p class="font-medium">${exp.category}</p>
+        <p class="text-sm text-gray-500">${exp.description || ""}</p>
+        <p class="text-xs text-gray-400">${exp.date}</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="font-semibold text-red-600">₹${exp.amount.toFixed(
+          2
+        )}</span>
+        <button data-id="${
+          exp.id
+        }" class="text-red-500 hover:text-red-700 deleteBtn">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+    `;
+    transactionsTable.appendChild(li);
   });
+
+  totalExpenseSpan.textContent = `₹${total.toFixed(2)}`;
+
+  // Delete event
+  document.querySelectorAll(".deleteBtn").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      const id = e.currentTarget.dataset.id;
+      if (confirm("Are you sure you want to delete this expense?")) {
+        await deleteDoc(doc(db, "expenses", id));
+        loadTransactions();
+      }
+    });
+  });
+}
+
+// ---------------- Sorting Change ----------------
+sortSelect?.addEventListener("change", renderTransactions);
+
+// ---------------- Category Handling ----------------
+categorySelect?.addEventListener("change", (e) => {
+  if (e.target.value === "__add_new__") {
+    newCategoryContainer.classList.remove("hidden");
+  } else {
+    newCategoryContainer.classList.add("hidden");
+  }
 });
 
-// ---------------- Add Category ----------------
 addCategoryBtn?.addEventListener("click", async () => {
   const newCat = newCategoryInput.value.trim();
   if (!newCat) return alert("Enter a category name");
@@ -223,19 +233,20 @@ addCategoryBtn?.addEventListener("click", async () => {
 async function loadCategories() {
   if (!currentUser) return;
 
-  try {
-    const catCol = collection(db, "categories");
-    const q = query(catCol, where("uid", "==", currentUser.uid));
-    const snapshot = await getDocs(q);
+  const q = query(
+    collection(db, "categories"),
+    where("uid", "==", currentUser.uid)
+  );
+  const snapshot = await getDocs(q);
 
-    categorySelect.innerHTML = `<option value="">Select Category</option>`;
-    snapshot.forEach((doc) => {
-      const cat = doc.data();
-      categorySelect.innerHTML += `<option value="${cat.name}">${cat.name}</option>`;
-    });
-  } catch (err) {
-    console.error(err);
-  }
+  categorySelect.innerHTML = `<option value="">Select Category</option>`;
+  snapshot.forEach((docSnap) => {
+    const cat = docSnap.data();
+    categorySelect.innerHTML += `<option value="${cat.name}">${cat.name}</option>`;
+  });
+
+  // ✅ Add "Add New Category" option always at last
+  categorySelect.innerHTML += `<option value="__add_new__">Add New Category</option>`;
 }
 
 // ---------------- Mobile Menu ----------------
@@ -243,7 +254,6 @@ menuButton?.addEventListener("click", () => {
   sidebar.classList.toggle("-translate-x-full");
   overlay.classList.toggle("hidden");
 });
-
 overlay?.addEventListener("click", () => {
   sidebar.classList.add("-translate-x-full");
   overlay.classList.add("hidden");
@@ -253,12 +263,7 @@ overlay?.addEventListener("click", () => {
 document.querySelectorAll(".logout").forEach((btn) => {
   btn.addEventListener("click", async (e) => {
     e.preventDefault();
-    try {
-      await signOut(auth);
-      window.location.href = "login.html";
-    } catch (err) {
-      console.error("Logout error:", err);
-      alert("Failed to logout: " + err.message);
-    }
+    await signOut(auth);
+    window.location.href = "login.html";
   });
 });
