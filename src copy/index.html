@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="bg-gray-100 font-sans">
+
+    <!-- Top bar (mobile) -->
+    <header class="bg-white shadow-md p-4 flex justify-between items-center md:hidden">
+        <button id="menuButton" class="flex flex-col justify-between h-6 w-8 focus:outline-none">
+            <span class="block h-0.5 w-full bg-gray-800"></span>
+            <span class="block h-0.5 w-full bg-gray-800"></span>
+            <span class="block h-0.5 w-full bg-gray-800"></span>
+        </button>
+        <h1 class="text-xl font-bold text-gray-800">Expense Tracker</h1>
+        <button class="logoutBtn bg-red-600 text-white px-3 py-1 rounded">Logout</button>
+    </header>
+
+    <div class="flex">
+        <!-- Sidebar -->
+        <aside id="sidebar"
+            class="w-64 bg-white shadow-md h-screen fixed md:sticky top-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-50">
+            <div class="p-6">
+                <h1 class="text-2xl font-bold mb-8 text-gray-800">Expense Tracker</h1>
+                <nav class="space-y-4">
+                    <a href="index.html" class="flex items-center py-2 px-4 rounded hover:bg-gray-200">
+                        <i class="fas fa-tachometer-alt mr-3"></i> Dashboard
+                    </a>
+                    <a href="expenses.html" class="flex items-center py-2 px-4 rounded hover:bg-gray-200">
+                        <i class="fas fa-plus-circle mr-3"></i> Expenses
+                    </a>
+                    <a href="income.html" class="flex items-center py-2 px-4 rounded hover:bg-gray-200">
+                        <i class="fas fa-wallet mr-3"></i> Income
+                    </a>
+                    <a href="savings.html" class="flex items-center py-2 px-4 rounded hover:bg-gray-200">
+                        <i class="fas fa-piggy-bank mr-3"></i> Savings
+                    </a>
+                    <a href="transactions.html" class="flex items-center py-2 px-4 rounded hover:bg-gray-200">
+                        <i class="fas fa-exchange-alt mr-3"></i> Transactions
+                    </a>
+                    <a href="login.html"
+                        class="logoutBtn flex items-center py-2 px-4 rounded hover:bg-gray-200 text-red-600">
+                        <i class="fas fa-sign-out-alt mr-3"></i> Logout
+                    </a>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Overlay for mobile -->
+        <div id="overlay" class="fixed inset-0 bg-black opacity-50 hidden z-40 md:hidden"></div>
+
+        <!-- Main content -->
+        <main class="flex-1 p-4 md:p-8">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-6">
+                Welcome, <span id="usernameDisplay"></span> 👋
+            </h2>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white shadow rounded-lg p-6 hover:shadow-lg transition">
+                    <h3 class="text-gray-500 font-medium mb-2">Current Money</h3>
+                    <p id="currentMoney" class="text-2xl font-bold text-green-600">₹0</p>
+                </div>
+                <div class="bg-white shadow rounded-lg p-6 hover:shadow-lg transition">
+                    <h3 class="text-gray-500 font-medium mb-2">Net Worth</h3>
+                    <p id="netWorth" class="text-2xl font-bold text-blue-600">₹0</p>
+                </div>
+                <div class="bg-white shadow rounded-lg p-6 hover:shadow-lg transition">
+                    <h3 class="text-gray-500 font-medium mb-2">Total Income</h3>
+                    <p id="totalIncome" class="text-2xl font-bold text-green-600">₹0</p>
+                </div>
+                <div class="bg-white shadow rounded-lg p-6 hover:shadow-lg transition">
+                    <h3 class="text-gray-500 font-medium mb-2">Total Expenses</h3>
+                    <p id="totalExpenses" class="text-2xl font-bold text-red-600">₹0</p>
+                </div>
+                <div class="bg-white shadow rounded-lg p-6 hover:shadow-lg transition">
+                    <h3 class="text-gray-500 font-medium mb-2">Total Savings</h3>
+                    <p id="totalSavings" class="text-2xl font-bold text-purple-600">₹0</p>
+                </div>
+                <div class="bg-white shadow rounded-lg p-6 hover:shadow-lg transition">
+                    <h3 class="text-gray-500 font-medium mb-2">Total Transactions</h3>
+                    <p id="totalTransactions" class="text-2xl font-bold text-indigo-600">₹0</p>
+                </div>
+            </div>
+
+            <!-- Recent Entries -->
+            <section class="bg-white pb-20 p-6 md:p-6 rounded-lg shadow">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-2">
+                    <h2 class="text-lg font-semibold">Recent Entries</h2>
+                    <div class="flex gap-2">
+                        <select id="entryFilter" class="px-3 py-2 border rounded text-sm">
+                            <option value="all">All</option>
+                            <option value="incomes">Income</option>
+                            <option value="expenses">Expenses</option>
+                            <option value="savings">Savings</option>
+                            <option value="transactions">Transactions</option>
+                        </select>
+
+                        <select id="sortField" class="px-3 py-2 border rounded text-sm">
+                            <!-- Dynamically filled based on category -->
+                        </select>
+
+                        <select id="sortOrder" class="px-3 py-2 border rounded text-sm">
+                            <option value="desc">Descending</option>
+                            <option value="asc">Ascending</option>
+                        </select>
+                    </div>
+                </div>
+
+                <ul id="recentEntries" class="divide-y divide-gray-200"></ul>
+            </section>
+        </main>
+    </div>
+    <nav class="fixed bottom-0 left-0 right-0 bg-white shadow-lg md:hidden z-50">
+        <div class="flex justify-around items-center py-3">
+            <a href="index.html" class="flex flex-col items-center text-gray-600">
+                <i class="fas fa-tachometer-alt mb-1"></i>
+                <span class="text-xs">Dashboard</span>
+            </a>
+            <a href="expenses.html" class="flex flex-col items-center text-gray-600">
+                <i class="fas fa-plus-circle mb-1"></i>
+                <span class="text-xs">Add Expense</span>
+            </a>
+            <a href="transactions.html" class="flex flex-col items-center text-gray-600">
+                <i class="fas fa-exchange-alt mb-1"></i>
+                <span class="text-xs">Transactions</span>
+            </a>
+            <a href="income.html" class="flex flex-col items-center text-gray-600">
+                <i class="fas fa-wallet mb-1"></i>
+                <span class="text-xs">Income</span>
+            </a>
+            <a href="savings.html" class="flex flex-col items-center text-gray-600">
+                <i class="fas fa-piggy-bank mb-1"></i>
+                <span class="text-xs">Savings</span>
+            </a>
+        </div>
+    </nav>
+    <script type="module" src="home.js"></script>
+</body>
+
+</html>

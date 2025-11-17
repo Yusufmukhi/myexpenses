@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transactions - Expense Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="bg-gray-50 font-sans">
+
+    <!-- Top bar (mobile) -->
+    <header class="bg-white shadow-md p-4 flex justify-between items-center md:hidden fixed top-0 left-0 right-0 z-50">
+        <button id="menuButton" class="flex flex-col justify-between h-6 w-8 focus:outline-none">
+            <span class="block h-0.5 w-full bg-gray-800"></span>
+            <span class="block h-0.5 w-full bg-gray-800"></span>
+            <span class="block h-0.5 w-full bg-gray-800"></span>
+        </button>
+        <h1 class="text-xl font-bold text-gray-800">Transactions</h1>
+        <a href="login.html" class="logout bg-red-600 text-white px-3 py-1 rounded shadow hover:bg-red-700">Logout</a>
+    </header>
+
+    <div class="flex pt-16 md:pt-0">
+
+        <!-- Sidebar -->
+        <aside id="sidebar"
+            class="w-64 bg-white shadow-md h-screen fixed md:sticky top-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-50">
+            <div class="p-6">
+                <h1 class="text-2xl font-bold mb-8 text-gray-800">Expense Tracker</h1>
+                <nav class="space-y-4">
+                    <a href="index.html" class="flex items-center py-2 px-4 rounded hover:bg-gray-200">
+                        <i class="fas fa-tachometer-alt mr-3"></i> Dashboard
+                    </a>
+                    <a href="expenses.html" class="flex items-center py-2 px-4 rounded hover:bg-gray-200">
+                        <i class="fas fa-plus-circle mr-3"></i> Expenses
+                    </a>
+                    <a href="income.html" class="flex items-center py-2 px-4 rounded hover:bg-gray-200">
+                        <i class="fas fa-wallet mr-3"></i> Income
+                    </a>
+                    <a href="savings.html" class="flex items-center py-2 px-4 rounded hover:bg-gray-200">
+                        <i class="fas fa-piggy-bank mr-3"></i> Savings
+                    </a>
+                    <a href="transactions.html" class="flex items-center py-2 px-4 rounded hover:bg-gray-200">
+                        <i class="fas fa-exchange-alt mr-3"></i> Transactions
+                    </a>
+                    <!-- <a href="settings.html" class="flex items-center py-2 px-4 rounded hover:bg-gray-200">
+                                <i class="fas fa-cog mr-3"></i> Settings
+                            </a> -->
+                    <a href="login.html"
+                        class="logout flex items-center py-2 px-4 rounded hover:bg-gray-200 text-red-600">
+                        <i class="fas fa-sign-out-alt mr-3"></i> Logout
+                    </a>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Overlay for mobile -->
+        <div id="overlay" class="fixed inset-0 bg-black opacity-50 hidden z-40 md:hidden"></div>
+
+        <!-- Main content -->
+        <main class="flex-1 p-6 md:p-10 grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            <!-- Transaction Form -->
+            <form id="transactionForm" class="bg-white p-6 shadow-lg rounded-lg space-y-4">
+                <h2 class="text-2xl font-semibold mb-4">Add Transaction</h2>
+
+                <div>
+                    <label for="date" class="block text-gray-700 font-medium mb-1">Date</label>
+                    <input type="date" id="date"
+                        class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required>
+                </div>
+
+                <div>
+                    <label for="amount" class="block text-gray-700 font-medium mb-1">Amount (₹)</label>
+                    <input type="number" id="amount"
+                        class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required>
+                </div>
+
+                <div>
+                    <label for="person" class="block text-gray-700 font-medium mb-1">Person</label>
+                    <select id="person"
+                        class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required>
+                        <option value="">Select Person</option>
+                    </select>
+                    <input type="text" id="newPerson" placeholder="Add new person"
+                        class="w-full px-3 py-2 border rounded mt-2 hidden">
+                    <button type="button" id="addPersonBtn"
+                        class="bg-green-600 text-white px-3 py-1 rounded mt-2 hidden">Add</button>
+                </div>
+
+                <div>
+                    <label for="type" class="block text-gray-700 font-medium mb-1">Type</label>
+                    <select id="type"
+                        class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required>
+                        <option value="">Select Type</option>
+                        <option value="given">Given</option>
+                        <option value="taken">Taken</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="description" class="block text-gray-700 font-medium mb-1">Description</label>
+                    <textarea id="description" rows="3"
+                        class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+
+                <button type="submit"
+                    class="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">Add</button>
+            </form>
+
+            <!-- Recent Transactions -->
+            <div class="bg-white md:p-6 pb-14 p-6 shadow-lg rounded-lg ">
+                <h2 class=" font-semibold mb-4 flex justify-between items-center">
+                    Transactions
+                    <select id="sortSelect" class="border rounded px-2 py-1">
+                        <option value="recent">Most Recent</option>
+                        <option value="oldest">Oldest</option>
+                        <option value="highest">Highest Amount</option>
+                        <option value="lowest">Lowest Amount</option>
+                    </select>
+                </h2>
+
+                <div class="mb-4">
+                    <p>Total: <span id="totalAmount">₹0</span></p>
+                    <p>Given: <span id="totalGiven">₹0</span></p>
+                    <p>Taken: <span id="totalTaken">₹0</span></p>
+                </div>
+
+                <ul id="transactionList" class="divide-y divide-gray-200">
+                    <!-- Transaction items go here -->
+                </ul>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Mobile Menu Bar (Bottom Navigation) -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white shadow-lg md:hidden z-50">
+        <div class="flex justify-around items-center py-3">
+            <a href="index.html" class="flex flex-col items-center text-gray-600">
+                <i class="fas fa-tachometer-alt mb-1"></i>
+                <span class="text-xs">Dashboard</span>
+            </a>
+            <a href="expenses.html" class="flex flex-col items-center text-gray-600">
+                <i class="fas fa-plus-circle mb-1"></i>
+                <span class="text-xs">Add Expense</span>
+            </a>
+            <a href="transactions.html" class="flex flex-col items-center text-gray-600">
+                <i class="fas fa-exchange-alt mb-1"></i>
+                <span class="text-xs">Add Transactions</span>
+            </a>
+            <a href="income.html" class="flex flex-col items-center text-gray-600">
+                <i class="fas fa-wallet mb-1"></i>
+                <span class="text-xs">Add Income</span>
+            </a>
+            <a href="savings.html" class="flex flex-col items-center text-gray-600">
+                <i class="fas fa-piggy-bank mb-1"></i>
+                <span class="text-xs">Add Saving</span>
+            </a>
+            <!-- <a href="#" class="flex flex-col items-center text-gray-600">
+                <i class="fas fa-chart-bar mb-1"></i>
+                <span class="text-xs">Reports</span>
+            </a>
+            <a href="#" class="flex flex-col items-center text-gray-600">
+                <i class="fas fa-cog mb-1"></i>
+                <span class="text-xs">Settings</span>
+            </a> -->
+        </div>
+    </nav>>
+
+    <script src="transactions.js"></script>
+
+</body>
+
+</html>

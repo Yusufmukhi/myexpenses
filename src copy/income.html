@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Add Income - Expense Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="bg-gray-50 font-sans">
+
+    <!-- Mobile Header -->
+    <header class="bg-white shadow-md p-4 flex justify-between items-center md:hidden fixed top-0 left-0 right-0 z-50">
+        <button id="menuButton" class="flex flex-col justify-between h-6 w-8 focus:outline-none">
+            <span class="block h-0.5 w-full bg-gray-800"></span>
+            <span class="block h-0.5 w-full bg-gray-800"></span>
+            <span class="block h-0.5 w-full bg-gray-800"></span>
+        </button>
+        <h1 class="text-xl font-bold text-gray-800">Add Income</h1>
+        <a href="login.html" class="logout bg-red-600 text-white px-3 py-1 rounded shadow hover:bg-red-700">Logout</a>
+    </header>
+
+    <div class="flex pt-16 md:pt-0">
+
+        <!-- Sidebar -->
+        <aside id="sidebar"
+            class="w-64 bg-white shadow-md h-screen fixed md:sticky top-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-50">
+            <div class="p-6">
+                <h1 class="text-2xl font-bold mb-8 text-gray-800">Expense Tracker</h1>
+                <nav class="space-y-4">
+                    <a href="index.html" class="flex items-center py-2 px-4 rounded hover:bg-gray-200">
+                        <i class="fas fa-tachometer-alt mr-3"></i> Dashboard
+                    </a>
+                    <a href="expenses.html" class="flex items-center py-2 px-4 rounded hover:bg-gray-200">
+                        <i class="fas fa-plus-circle mr-3"></i> Expenses
+                    </a>
+                    <a href="income.html" class="flex items-center py-2 px-4 rounded hover:bg-gray-200 bg-gray-100">
+                        <i class="fas fa-wallet mr-3"></i> Income
+                    </a>
+                    <a href="savings.html" class="flex items-center py-2 px-4 rounded hover:bg-gray-200">
+                        <i class="fas fa-piggy-bank mr-3"></i> Savings
+                    </a>
+                    <a href="transactions.html" class="flex items-center py-2 px-4 rounded hover:bg-gray-200">
+                        <i class="fas fa-exchange-alt mr-3"></i> Transactions
+                    </a>
+                    <a href="login.html"
+                        class="logout flex items-center py-2 px-4 rounded hover:bg-gray-200 text-red-600">
+                        <i class="fas fa-sign-out-alt mr-3"></i> Logout
+                    </a>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Overlay for mobile -->
+        <div id="overlay" class="fixed inset-0 bg-black opacity-50 hidden z-30 md:hidden"></div>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-6 md:p-10 flex flex-col md:flex-row gap-6">
+
+            <!-- Add Income Form -->
+            <form id="incomeForm" class="bg-white p-6 shadow-lg rounded-lg flex-1 space-y-4">
+                <h2 class="text-2xl font-semibold mb-4">Add Income</h2>
+
+                <div>
+                    <label for="date" class="block text-gray-700 font-medium mb-1">Date</label>
+                    <input type="date" id="date" required
+                        class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div>
+                    <label for="amount" class="block text-gray-700 font-medium mb-1">Amount (₹)</label>
+                    <input type="number" id="amount" required
+                        class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div>
+                    <label for="source" class="block text-gray-700 font-medium mb-1">Source</label>
+                    <select id="source" required
+                        class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select Source</option>
+                        <option value="other">Other</option>
+                    </select>
+                    <div class="flex gap-2 items-center mt-2">
+                        <input type="text" id="newSource" placeholder="Add new source"
+                            class="flex-1 px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 hidden">
+                        <button type="button" id="addSourceBtn"
+                            class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 hidden">Add</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="description" class="block text-gray-700 font-medium mb-1">Description</label>
+                    <textarea id="description" rows="3"
+                        class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+
+                <button type="submit"
+                    class="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition">Add</button>
+            </form>
+
+            <!-- Income List -->
+            <div class="bg-white pb-20 p-6 md:p-6 shadow-lg rounded-lg overflow-x-auto">
+                <div class="flex flex-col md:flex-row justify-between mb-4 gap-2">
+                    <select id="sortSelect" class="border rounded px-2 py-1">
+                        <option value="recent">Sort by Date</option>
+                        <option value="amount">Sort by Amount</option>
+                        <option value="source">Sort by Source</option>
+                    </select>
+                </div>
+
+                <ul id="incomeList" class="divide-y divide-gray-200">
+                    <!-- Incomes will appear here -->
+                </ul>
+
+                <div class="mt-4 space-y-1">
+                    <p>Total Income: <span id="totalIncome">₹0</span></p>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Mobile Bottom Nav -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white shadow-lg md:hidden z-50">
+        <div class="flex justify-around items-center py-3">
+            <a href="index.html" class="flex flex-col items-center text-gray-600">
+                <i class="fas fa-tachometer-alt mb-1"></i>
+                <span class="text-xs">Dashboard</span>
+            </a>
+            <a href="expenses.html" class="flex flex-col items-center text-gray-600">
+                <i class="fas fa-plus-circle mb-1"></i>
+                <span class="text-xs">Add Expense</span>
+            </a>
+            <a href="transactions.html" class="flex flex-col items-center text-gray-600">
+                <i class="fas fa-exchange-alt mb-1"></i>
+                <span class="text-xs">Transactions</span>
+            </a>
+            <a href="income.html" class="flex flex-col items-center text-gray-600">
+                <i class="fas fa-wallet mb-1"></i>
+                <span class="text-xs">Income</span>
+            </a>
+            <a href="savings.html" class="flex flex-col items-center text-gray-600">
+                <i class="fas fa-piggy-bank mb-1"></i>
+                <span class="text-xs">Savings</span>
+            </a>
+        </div>
+    </nav>
+
+    <script type="module" src="income.js"></script>
+</body>
+
+</html>

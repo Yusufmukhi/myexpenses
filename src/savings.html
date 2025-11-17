@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Savings - Expense Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="bg-gray-50 font-sans">
+
+    <!-- Top bar (mobile only) -->
+    <header class="bg-white shadow-md p-4 flex justify-between items-center md:hidden fixed top-0 left-0 right-0 z-50">
+        <button id="menuButton" class="flex flex-col justify-between h-6 w-8 focus:outline-none">
+            <span class="block h-0.5 w-full bg-gray-800"></span>
+            <span class="block h-0.5 w-full bg-gray-800"></span>
+            <span class="block h-0.5 w-full bg-gray-800"></span>
+        </button>
+        <h1 class="text-xl font-bold text-gray-800">Expense Tracker</h1>
+        <a href="login.html" class="logout bg-red-600 text-white px-3 py-1 rounded shadow hover:bg-red-700">Logout</a>
+    </header>
+
+    <div class="flex pt-16 md:pt-0">
+
+        <!-- Sidebar -->
+        <aside id="sidebar"
+            class="w-64 bg-white shadow-md h-screen fixed md:sticky top-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-50">
+            <div class="p-6">
+                <h1 class="text-2xl font-bold mb-8 text-gray-800">Expense Tracker</h1>
+                <nav class="space-y-4">
+                    <a href="index.html" class="flex items-center py-2 px-4 rounded hover:bg-gray-200">
+                        <i class="fas fa-tachometer-alt mr-3"></i> Dashboard
+                    </a>
+                    <a href="expenses.html" class="flex items-center py-2 px-4 rounded hover:bg-gray-200">
+                        <i class="fas fa-plus-circle mr-3"></i> Expenses
+                    </a>
+                    <a href="income.html" class="flex items-center py-2 px-4 rounded hover:bg-gray-200">
+                        <i class="fas fa-wallet mr-3"></i> Income
+                    </a>
+                    <a href="savings.html" class="flex items-center py-2 px-4 rounded hover:bg-gray-200">
+                        <i class="fas fa-piggy-bank mr-3"></i> Savings
+                    </a>
+                    <a href="transactions.html" class="flex items-center py-2 px-4 rounded hover:bg-gray-200">
+                        <i class="fas fa-exchange-alt mr-3"></i> Transactions
+                    </a>
+                    <!-- <a href="settings.html" class="flex items-center py-2 px-4 rounded hover:bg-gray-200">
+                                <i class="fas fa-cog mr-3"></i> Settings
+                            </a> -->
+                    <a href="login.html"
+                        class="logout flex items-center py-2 px-4 rounded hover:bg-gray-200 text-red-600" id="logout">
+                        <i class="fas fa-sign-out-alt mr-3"></i> Logout
+                    </a>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Overlay for mobile -->
+        <div id="overlay" class="fixed inset-0 bg-black opacity-50 hidden z-30 md:hidden"></div>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-6 md:p-10 flex flex-col md:flex-row gap-6">
+
+            <!-- Form -->
+            <form id="form" class="bg-white p-6 shadow-lg rounded-lg space-y-6 max-w-lg md:flex-1">
+                <h2 class="text-3xl font-semibold text-gray-800 mb-4">Add Saving</h2>
+
+                <div>
+                    <label for="date" class="block text-gray-700 font-medium mb-2">Date</label>
+                    <input type="date" id="date" name="date" required
+                        class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div>
+                    <label for="amount" class="block text-gray-700 font-medium mb-2">Amount (₹)</label>
+                    <input type="number" id="amount" name="amount" placeholder="Enter amount" required
+                        class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div>
+                    <label for="type" class="block text-gray-700 font-medium mb-2">Type</label>
+                    <select id="type" required
+                        class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select Type</option>
+                        <option value="netWorth">Add to Net Worth</option>
+                        <option value="savingsOnly">Add to Savings</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="description" class="block text-gray-700 font-medium mb-2">Description</label>
+                    <textarea id="description" rows="3" placeholder="Enter details"
+                        class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+
+                <button type="submit" id="sumbit"
+                    class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition">
+                    Add Saving
+                </button>
+            </form>
+
+            <!-- Recent Transactions & Totals -->
+            <div class="flex-1 bg-white p-6 shadow-lg rounded-lg space-y-4 pb-20">
+                <h3 class="text-xl font-semibold text-gray-800">Recent Transactions</h3>
+                <ul id="recentTransactions" class="divide-y divide-gray-200 max-h-96 overflow-y-auto">
+                    <!-- Transactions will appear here -->
+                </ul>
+
+                <div class="flex justify-between mt-4">
+                    <span class="font-semibold">Total Savings:</span>
+                    <span id="totalSavings" class="font-semibold text-green-600">₹0.00</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="font-semibold">Net Worth Contribution:</span>
+                    <span id="totalNetWorth" class="font-semibold text-blue-600">₹0.00</span>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Mobile Menu Bar (Bottom Navigation) -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white shadow-lg md:hidden z-50">
+        <div class="flex justify-around items-center py-3">
+            <a href="index.html" class="flex flex-col items-center text-gray-600">
+                <i class="fas fa-tachometer-alt mb-1"></i>
+                <span class="text-xs">Dashboard</span>
+            </a>
+            <a href="expenses.html" class="flex flex-col items-center text-gray-600">
+                <i class="fas fa-plus-circle mb-1"></i>
+                <span class="text-xs">Add Expense</span>
+            </a>
+            <a href="transactions.html" class="flex flex-col items-center text-gray-600">
+                <i class="fas fa-exchange-alt mb-1"></i>
+                <span class="text-xs">Add Transactions</span>
+            </a>
+            <a href="income.html" class="flex flex-col items-center text-gray-600">
+                <i class="fas fa-wallet mb-1"></i>
+                <span class="text-xs">Add Income</span>
+            </a>
+            <a href="savings.html" class="flex flex-col items-center text-gray-600">
+                <i class="fas fa-piggy-bank mb-1"></i>
+                <span class="text-xs">Add Saving</span>
+            </a>
+            <!-- <a href="#" class="flex flex-col items-center text-gray-600">
+                <i class="fas fa-chart-bar mb-1"></i>
+                <span class="text-xs">Reports</span>
+            </a>
+            <a href="#" class="flex flex-col items-center text-gray-600">
+                <i class="fas fa-cog mb-1"></i>
+                <span class="text-xs">Settings</span>
+            </a> -->
+        </div>
+    </nav>
+
+
+    <script src="savings.js"></script>
+</body>
+
+</html>
