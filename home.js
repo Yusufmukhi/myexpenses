@@ -48,8 +48,7 @@ const sortField = document.getElementById("sortField");
 const sortOrder = document.getElementById("sortOrder");
 
 let allEntries = [];
-let currentCategory = "transactions";
-
+let currentCategory = "transactions";   // ✅ FIXED
 
 // ---------------- Auth ----------------
 onAuthStateChanged(auth, (user) => {
@@ -57,7 +56,7 @@ onAuthStateChanged(auth, (user) => {
 
   usernameDisplay.textContent = user.displayName || user.email || "Guest";
 
-  // DEFAULT FILTER → transactions only
+  // DEFAULT → show only transactions
   entryFilter.value = "transactions";
   currentCategory = "transactions";
   updateSortFields("transactions");
@@ -66,7 +65,6 @@ onAuthStateChanged(auth, (user) => {
 });
 
 // ---------------- Load all entries ----------------
-// Load ALL categories so dashboard totals work
 function loadAll(uid) {
   const categories = ["incomes", "expenses", "savings", "transactions"];
 
@@ -102,21 +100,20 @@ function updateTotals() {
     .filter((e) => e.category === "transactions" && !e.completed)
     .reduce((a, b) => a + b.amount, 0);
 
-  totals.transactionstaken = allEntries
+  const taken = allEntries
     .filter((e) => e.category === "transactions" && !e.completed && e.type === "taken")
     .reduce((a, b) => a + b.amount, 0);
 
-  totals.transactionsgiven = allEntries
+  const given = allEntries
     .filter((e) => e.category === "transactions" && !e.completed && e.type === "given")
     .reduce((a, b) => a + b.amount, 0);
 
-  const netTransactionAmount = totals.transactionstaken - totals.transactionsgiven;
+  const netTransactionAmount = taken - given;
 
   const savingsOnly = allEntries
     .filter((e) => e.category === "savings" && e.mode === "savingsOnly")
     .reduce((a, b) => a + b.amount, 0);
 
-    console.log("All Entries:", allEntries);
   const savingsUsed = totals.savings - savingsOnly;
 
   totalIncome.textContent = `₹${totals.income.toFixed(2)}`;
@@ -135,7 +132,6 @@ function updateTotals() {
     savingsOnly +
     netTransactionAmount
   ).toFixed(2)}`;
-
 }
 
 function sum(cat) {
@@ -170,7 +166,7 @@ function renderEntries() {
       "flex flex-col md:flex-row justify-between border-b py-2 items-start md:items-center";
 
     li.innerHTML = `
-      <span>${new Date(e.date).toISOString().split("T")[0]} - 
+      <span>${new Date(e.date).toISOString().split("T")[0]} -
       ${e.description || ""} | Person: ${e.person} | Type: ${e.type}</span>
 
       <div class="flex items-center gap-2 mt-2 md:mt-0">
@@ -189,6 +185,7 @@ function renderEntries() {
     recentEntries.appendChild(li);
   });
 
+  // Toggle complete
   recentEntries.querySelectorAll(".tickBtn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const id = btn.dataset.id;
@@ -200,6 +197,7 @@ function renderEntries() {
     });
   });
 
+  // Delete transaction
   recentEntries.querySelectorAll(".deleteBtn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const id = btn.dataset.id;
@@ -218,7 +216,7 @@ function updateSortFields(category) {
     const opt = document.createElement("option");
     opt.value = f;
     opt.textContent = f.charAt(0).toUpperCase() + f.slice(1);
-    sortField.appendChild(opt);
+    sortField.appendAppendChild(opt);
   });
 
   sortField.value = "date";
