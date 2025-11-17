@@ -1,118 +1,240 @@
-<!DOCTYPE html>
-<html lang="en">
+// ---------------- Firebase imports ----------------
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  query,
+  where,
+  orderBy,
+  onSnapshot,
+  doc,
+  deleteDoc,
+  updateDoc,
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Expense Tracker - Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
+import {
+  getAuth,
+  onAuthStateChanged,
+  signOut,
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-<body class="bg-gray-50 font-sans">
+// ---------------- Firebase config ----------------
+const firebaseConfig = {
+  apiKey: "AIzaSyA1MhwEBTDrgYc2ywKJnuyAIw5Q6qS8Rcw",
+  authDomain: "expensestracker-36711.firebaseapp.com",
+  projectId: "expensestracker-36711",
+  storageBucket: "expensestracker-36711.firebasestorage.app",
+  messagingSenderId: "111920440061",
+  appId: "1:111920440061:web:3af7eff29b1896280ad494",
+  measurementId: "G-RC8QLYP6FZ",
+};
 
-    <!-- Top bar -->
-    <header class="bg-white shadow-md p-4 flex justify-between items-center md:hidden">
-        <button id="menuButton" class="flex flex-col justify-between h-6 w-8 focus:outline-none">
-            <span class="block h-0.5 w-full bg-gray-800"></span>
-            <span class="block h-0.5 w-full bg-gray-800"></span>
-            <span class="block h-0.5 w-full bg-gray-800"></span>
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+// ---------------- DOM Elements ----------------
+const totalIncome = document.getElementById("totalIncome");
+const totalExpenses = document.getElementById("totalExpenses");
+const totalSavings = document.getElementById("totalSavings");
+const totalTransactions = document.getElementById("totalTransactions");
+const netWorth = document.getElementById("netWorth");
+const currentMoney = document.getElementById("currentMoney");
+const recentEntries = document.getElementById("recentEntries");
+const usernameDisplay = document.getElementById("usernameDisplay");
+
+const entryFilter = document.getElementById("entryFilter");
+const sortField = document.getElementById("sortField");
+const sortOrder = document.getElementById("sortOrder");
+
+let allEntries = [];
+let currentCategory = "transactions";
+
+
+// ---------------- Auth ----------------
+onAuthStateChanged(auth, (user) => {
+  if (!user) return (window.location.href = "login.html");
+
+  usernameDisplay.textContent = user.displayName || user.email || "Guest";
+
+  // DEFAULT FILTER → transactions only
+  entryFilter.value = "transactions";
+  currentCategory = "transactions";
+  updateSortFields("transactions");
+
+  loadAll(user.uid);
+});
+
+// ---------------- Load all entries ----------------
+// Load ALL categories so dashboard totals work
+function loadAll(uid) {
+  const categories = ["incomes", "expenses", "savings", "transactions"];
+
+  categories.forEach((col) => {
+    const q = query(
+      collection(db, col),
+      where("uid", "==", uid),
+      orderBy("date", "desc")
+    );
+
+    onSnapshot(q, (snap) => {
+      allEntries = allEntries.filter((e) => e.category !== col);
+
+      snap.forEach((docSnap) => {
+        allEntries.push({ ...docSnap.data(), category: col, id: docSnap.id });
+      });
+
+      updateTotals();
+      renderEntries();
+    });
+  });
+}
+
+// ---------------- Update totals ----------------
+function updateTotals() {
+  const totals = {};
+
+  totals.income = sum("incomes");
+  totals.expenses = sum("expenses");
+  totals.savings = sum("savings");
+
+  totals.transactions = allEntries
+    .filter((e) => e.category === "transactions" && !e.completed)
+    .reduce((a, b) => a + b.amount, 0);
+
+  totals.transactionstaken = allEntries
+    .filter((e) => e.category === "transactions" && !e.completed && e.type === "taken")
+    .reduce((a, b) => a + b.amount, 0);
+
+  totals.transactionsgiven = allEntries
+    .filter((e) => e.category === "transactions" && !e.completed && e.type === "given")
+    .reduce((a, b) => a + b.amount, 0);
+
+  const netTransactionAmount = totals.transactionstaken - totals.transactionsgiven;
+
+  const savingsOnly = allEntries
+    .filter((e) => e.category === "savings" && e.mode === "savingsOnly")
+    .reduce((a, b) => a + b.amount, 0);
+
+    console.log("All Entries:", allEntries);
+  const savingsUsed = totals.savings - savingsOnly;
+
+  totalIncome.textContent = `₹${totals.income.toFixed(2)}`;
+  totalExpenses.textContent = `₹${totals.expenses.toFixed(2)}`;
+  totalSavings.textContent = `₹${totals.savings.toFixed(2)}`;
+  totalTransactions.textContent = `₹${totals.transactions.toFixed(2)}`;
+  netWorth.textContent = `₹${(
+    totals.income -
+    totals.expenses +
+    savingsUsed
+  ).toFixed(2)}`;
+
+  currentMoney.textContent = `₹${(
+    totals.income -
+    totals.expenses -
+    savingsOnly +
+    netTransactionAmount
+  ).toFixed(2)}`;
+
+}
+
+function sum(cat) {
+  return allEntries
+    .filter((e) => e.category === cat)
+    .reduce((a, b) => a + b.amount, 0);
+}
+
+// ---------------- Render ONLY transactions ----------------
+function renderEntries() {
+  recentEntries.innerHTML = "";
+
+  const entries = allEntries.filter((e) => e.category === "transactions");
+
+  if (!entries.length) {
+    recentEntries.innerHTML = `<li class="text-gray-500 py-2">No recent transactions found</li>`;
+    return;
+  }
+
+  const field = sortField.value || "date";
+  const order = sortOrder.value === "asc" ? 1 : -1;
+
+  entries.sort((a, b) => {
+    const aVal = field === "date" ? new Date(a.date) : a[field];
+    const bVal = field === "date" ? new Date(b.date) : b[field];
+    return (aVal > bVal ? 1 : -1) * order;
+  });
+
+  entries.forEach((e) => {
+    const li = document.createElement("li");
+    li.className =
+      "flex flex-col md:flex-row justify-between border-b py-2 items-start md:items-center";
+
+    li.innerHTML = `
+      <span>${new Date(e.date).toISOString().split("T")[0]} - 
+      ${e.description || ""} | Person: ${e.person} | Type: ${e.type}</span>
+
+      <div class="flex items-center gap-2 mt-2 md:mt-0">
+        <span class="text-indigo-600">₹${e.amount.toFixed(2)}</span>
+
+        <button class="tickBtn text-green-600 hover:text-green-800" data-id="${e.id}">
+          <i class="fas ${e.completed ? "fa-undo" : "fa-check"}"></i>
         </button>
-        <h1 class="text-2xl font-bold text-gray-800">Expense Tracker</h1>
-        <button id="logoutBtn" class="bg-red-600 text-white px-4 py-2 rounded shadow hover:bg-red-700">Logout</button>
-    </header>
 
-    <div class="flex">
-        <!-- Sidebar -->
-        <aside id="sidebar"
-            class="w-64 bg-white shadow-md h-screen fixed md:sticky top-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-50">
-            <div class="p-6">
-                <h1 class="text-2xl font-bold mb-8 text-gray-800">Expense Tracker</h1>
-                <nav class="space-y-4">
-                    <a href="#" class="flex items-center py-2 px-4 rounded hover:bg-gray-200">
-                        <i class="fas fa-tachometer-alt mr-3"></i> Dashboard
-                    </a>
-                    <a href="#" class="flex items-center py-2 px-4 rounded hover:bg-gray-200">
-                        <i class="fas fa-plus-circle mr-3"></i> Expenses
-                    </a>
-                    <a href="#" class="flex items-center py-2 px-4 rounded hover:bg-gray-200">
-                        <i class="fas fa-wallet mr-3"></i> Income
-                    </a>
-                    <a href="#" class="flex items-center py-2 px-4 rounded hover:bg-gray-200">
-                        <i class="fas fa-piggy-bank mr-3"></i> Savings
-                    </a>
-                    <a href="#" class="flex items-center py-2 px-4 rounded hover:bg-gray-200">
-                        <i class="fas fa-exchange-alt mr-3"></i> Transactions
-                    </a>
-                    <a href="login.html"
-                        class="logoutBtn flex items-center py-2 px-4 rounded hover:bg-gray-200 text-red-600"
-                        id="logoutBtn">
-                        <i class="fas fa-sign-out-alt mr-3"></i> Logout
-                    </a>
-                </nav>
-            </div>
-        </aside>
+        <button class="deleteBtn text-red-600 hover:text-red-800" data-id="${e.id}">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+    `;
 
-        <!-- Overlay -->
-        <div id="overlay" class="fixed inset-0 bg-black opacity-50 hidden z-40 md:hidden"></div>
+    recentEntries.appendChild(li);
+  });
 
-        <!-- Main content -->
-        <main class="flex-1 p-4 md:p-8 pb-20 md:pb-8">
-            <h2 class="text-3xl font-semibold text-gray-800 mb-6">
-                Welcome, <span id="usernameDisplay"></span>!
-            </h2>
+  recentEntries.querySelectorAll(".tickBtn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.id;
+      const entry = allEntries.find((e) => e.id === id);
 
-            <!-- Stats Cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                <div class="bg-white shadow-lg rounded-lg p-6 hover:shadow-xl transition">
-                    <h3 class="text-gray-500 font-medium mb-2">Current Money</h3>
-                    <p id="currentMoney" class="text-2xl font-bold text-green-600 mb-4">₹0</p>
-                </div>
-                <div class="bg-white shadow-lg rounded-lg p-6 hover:shadow-xl transition">
-                    <h3 class="text-gray-500 font-medium mb-2">Net Worth</h3>
-                    <p id="netWorth" class="text-2xl font-bold text-green-600 mb-4">₹0</p>
-                </div>
-                <div class="bg-white shadow-lg rounded-lg p-6 hover:shadow-xl transition">
-                    <h3 class="text-gray-500 font-medium mb-2">Total Income</h3>
-                    <p id="totalIncome" class="text-2xl font-bold text-green-600 mb-4">₹0</p>
-                </div>
-                <div class="bg-white shadow-lg rounded-lg p-6 hover:shadow-xl transition">
-                    <h3 class="text-gray-500 font-medium mb-2">Total Expenses</h3>
-                    <p id="totalExpenses" class="text-2xl font-bold text-red-600 mb-4">₹0</p>
-                </div>
-                <div class="bg-white shadow-lg rounded-lg p-6 hover:shadow-xl transition">
-                    <h3 class="text-gray-500 font-medium mb-2">Total Savings</h3>
-                    <p id="totalSavings" class="text-2xl font-bold text-blue-600 mb-4">₹0</p>
-                </div>
-                <div class="bg-white shadow-lg rounded-lg p-6 hover:shadow-xl transition">
-                    <h3 class="text-gray-500 font-medium mb-2">Total Transactions</h3>
-                    <p id="totalTransactions" class="text-2xl font-bold text-purple-600 mb-4">₹0</p>
-                </div>
-            </div>
+      await updateDoc(doc(db, "transactions", id), {
+        completed: !entry.completed,
+      });
+    });
+  });
 
-            <!-- Recent Entries Section -->
-            <section class="bg-white p-6 rounded shadow mb-8">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold">Recent Entries</h2>
-                    <div>
-                        <select id="entryFilter" class="px-3 py-1 border rounded">
-                            <option value="all">All</option>
-                            <option value="incomes">Income</option>
-                            <option value="expenses">Expenses</option>
-                            <option value="savings">Savings</option>
-                            <option value="transactions">Transactions</option>
-                        </select>
-                    </div>
-                </div>
-                <ul id="recentEntries" class="divide-y divide-gray-200"></ul>
-            </section>
+  recentEntries.querySelectorAll(".deleteBtn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.id;
+      await deleteDoc(doc(db, "transactions", id));
+    });
+  });
+}
 
-        </main>
-    </div>
+// ---------------- Sort fields ----------------
+function updateSortFields(category) {
+  sortField.innerHTML = "";
 
-    <!-- Firebase SDK -->
-    <script type="module" src="home.js"></script>
+  const fields = ["date", "amount", "person", "type"];
 
-</body>
+  fields.forEach((f) => {
+    const opt = document.createElement("option");
+    opt.value = f;
+    opt.textContent = f.charAt(0).toUpperCase() + f.slice(1);
+    sortField.appendChild(opt);
+  });
 
-</html>
+  sortField.value = "date";
+}
+
+// ---------------- Sidebar toggle ----------------
+const menuButton = document.getElementById("menuButton");
+const sidebar = document.getElementById("sidebar");
+const overlay = document.getElementById("overlay");
+
+menuButton?.addEventListener("click", () => {
+  sidebar.classList.toggle("-translate-x-full");
+  overlay.classList.toggle("hidden");
+});
+
+overlay?.addEventListener("click", () => {
+  sidebar.classList.add("-translate-x-full");
+  overlay.classList.add("hidden");
+});

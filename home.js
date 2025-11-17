@@ -57,7 +57,7 @@ onAuthStateChanged(auth, (user) => {
 
 // ---------------- Load all entries ----------------
 function loadAll(uid) {
-  const categories = [ "transactions"];
+  const categories = [ "incomes","expenses","savings","transactions"];
   categories.forEach((col) => {
     const q = query(
       collection(db, col),
@@ -103,6 +103,8 @@ function updateTotals() {
 
   const netTransactionAmount =
     totals.transactionstaken - totals.transactionsgiven;
+console.log(totals.expenses);
+
 
   // Keep your savings logic intact
   const savingsOnly = allEntries
@@ -261,4 +263,4 @@ menuButton?.addEventListener("click", () => {
 overlay?.addEventListener("click", () => {
   sidebar.classList.add("-translate-x-full");
   overlay.classList.add("hidden");
-});
+});  in this i only want recent transatons of transactions
