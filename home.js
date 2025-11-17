@@ -1,3 +1,4 @@
+// ---------------- Firebase imports ----------------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore,
@@ -10,6 +11,7 @@ import {
   deleteDoc,
   updateDoc,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
 import {
   getAuth,
   onAuthStateChanged,
@@ -46,70 +48,75 @@ const sortField = document.getElementById("sortField");
 const sortOrder = document.getElementById("sortOrder");
 
 let allEntries = [];
-let currentCategory = "all";
+let currentCategory = "transactions";
+
 
 // ---------------- Auth ----------------
 onAuthStateChanged(auth, (user) => {
   if (!user) return (window.location.href = "login.html");
+
   usernameDisplay.textContent = user.displayName || user.email || "Guest";
+
+  // DEFAULT FILTER → transactions only
+  entryFilter.value = "transactions";
+  currentCategory = "transactions";
+  updateSortFields("transactions");
+
   loadAll(user.uid);
 });
 
 // ---------------- Load all entries ----------------
+// Load ALL categories so dashboard totals work
 function loadAll(uid) {
-  const categories = [ "incomes","expenses","savings","transactions"];
+  const categories = ["incomes", "expenses", "savings", "transactions"];
+
   categories.forEach((col) => {
     const q = query(
       collection(db, col),
       where("uid", "==", uid),
       orderBy("date", "desc")
     );
+
     onSnapshot(q, (snap) => {
       allEntries = allEntries.filter((e) => e.category !== col);
+
       snap.forEach((docSnap) => {
         allEntries.push({ ...docSnap.data(), category: col, id: docSnap.id });
       });
+
       updateTotals();
       renderEntries();
     });
   });
 }
 
-// ---------------- Update totals (same as your logic) ----------------
+// ---------------- Update totals ----------------
 function updateTotals() {
   const totals = {};
-  totals.income = allEntries
-    .filter((e) => e.category === "incomes")
-    .reduce((a, b) => a + b.amount, 0);
-  totals.expenses = allEntries
-    .filter((e) => e.category === "expenses")
-    .reduce((a, b) => a + b.amount, 0);
-  totals.savings = allEntries
-    .filter((e) => e.category === "savings")
-    .reduce((a, b) => a + b.amount, 0);
+
+  totals.income = sum("incomes");
+  totals.expenses = sum("expenses");
+  totals.savings = sum("savings");
+
   totals.transactions = allEntries
     .filter((e) => e.category === "transactions" && !e.completed)
     .reduce((a, b) => a + b.amount, 0);
+
   totals.transactionstaken = allEntries
-    .filter(
-      (e) => e.category === "transactions" && !e.completed && e.type === "taken"
-    )
+    .filter((e) => e.category === "transactions" && !e.completed && e.type === "taken")
     .reduce((a, b) => a + b.amount, 0);
+
   totals.transactionsgiven = allEntries
-    .filter(
-      (e) => e.category === "transactions" && !e.completed && e.type === "given"
-    )
+    .filter((e) => e.category === "transactions" && !e.completed && e.type === "given")
     .reduce((a, b) => a + b.amount, 0);
 
-  const netTransactionAmount =
-    totals.transactionstaken - totals.transactionsgiven;
-console.log(totals.expenses);
+  const netTransactionAmount = totals.transactionstaken - totals.transactionsgiven;
 
-
-  // Keep your savings logic intact
   const savingsOnly = allEntries
     .filter((e) => e.category === "savings" && e.mode === "savingsOnly")
     .reduce((a, b) => a + b.amount, 0);
+
+    console.log("All Entries:", allEntries);
   const savingsUsed = totals.savings - savingsOnly;
 
   totalIncome.textContent = `₹${totals.income.toFixed(2)}`;
@@ -121,39 +128,40 @@ console.log(totals.expenses);
     totals.expenses +
     savingsUsed
   ).toFixed(2)}`;
+
   currentMoney.textContent = `₹${(
     totals.income -
     totals.expenses -
     savingsOnly +
     netTransactionAmount
   ).toFixed(2)}`;
+
 }
 
-// ---------------- Render entries ----------------
+function sum(cat) {
+  return allEntries
+    .filter((e) => e.category === cat)
+    .reduce((a, b) => a + b.amount, 0);
+}
+
+// ---------------- Render ONLY transactions ----------------
 function renderEntries() {
   recentEntries.innerHTML = "";
-  let entries =
-    currentCategory === "all"
-      ? [...allEntries]
-      : allEntries.filter((e) => e.category === currentCategory);
+
+  const entries = allEntries.filter((e) => e.category === "transactions");
 
   if (!entries.length) {
-    recentEntries.innerHTML = `<li class="text-gray-500 py-2">No entries found</li>`;
+    recentEntries.innerHTML = `<li class="text-gray-500 py-2">No recent transactions found</li>`;
     return;
   }
 
-  // Sort dynamically
   const field = sortField.value || "date";
   const order = sortOrder.value === "asc" ? 1 : -1;
+
   entries.sort((a, b) => {
     const aVal = field === "date" ? new Date(a.date) : a[field];
     const bVal = field === "date" ? new Date(b.date) : b[field];
-    if (aVal === undefined) return 1;
-    if (bVal === undefined) return -1;
-    return (
-      (typeof aVal === "string" ? aVal.localeCompare(bVal) : aVal - bVal) *
-      order
-    );
+    return (aVal > bVal ? 1 : -1) * order;
   });
 
   entries.forEach((e) => {
@@ -161,93 +169,58 @@ function renderEntries() {
     li.className =
       "flex flex-col md:flex-row justify-between border-b py-2 items-start md:items-center";
 
-    let extra = "";
-    if (e.category === "transactions")
-      extra = ` | Person: ${e.person} | Type: ${e.type}`;
-
     li.innerHTML = `
-      <span>${new Date(e.date).toISOString().split("T")[0]} - ${capitalize(
-      e.category
-    )} - ${e.description || ""}${extra}</span>
+      <span>${new Date(e.date).toISOString().split("T")[0]} - 
+      ${e.description || ""} | Person: ${e.person} | Type: ${e.type}</span>
+
       <div class="flex items-center gap-2 mt-2 md:mt-0">
         <span class="text-indigo-600">₹${e.amount.toFixed(2)}</span>
-        ${
-          e.category === "transactions"
-            ? `<button class="tickBtn text-green-600 hover:text-green-800" data-id="${
-                e.id
-              }">
+
+        <button class="tickBtn text-green-600 hover:text-green-800" data-id="${e.id}">
           <i class="fas ${e.completed ? "fa-undo" : "fa-check"}"></i>
-        </button>`
-            : ""
-        }
-        <button class="deleteBtn text-red-600 hover:text-red-800" data-id="${
-          e.id
-        }" data-cat="${e.category}">
+        </button>
+
+        <button class="deleteBtn text-red-600 hover:text-red-800" data-id="${e.id}">
           <i class="fas fa-trash"></i>
         </button>
       </div>
     `;
+
     recentEntries.appendChild(li);
   });
 
-  // Tick toggle
   recentEntries.querySelectorAll(".tickBtn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const id = btn.dataset.id;
       const entry = allEntries.find((e) => e.id === id);
-      if (!entry) return;
-      try {
-        await updateDoc(doc(db, "transactions", id), {
-          completed: !entry.completed,
-        });
-      } catch (err) {
-        console.error(err);
-      }
+
+      await updateDoc(doc(db, "transactions", id), {
+        completed: !entry.completed,
+      });
     });
   });
 
-  // Delete entries
   recentEntries.querySelectorAll(".deleteBtn").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const id = btn.dataset.id;
-      const category = btn.dataset.cat;
-      try {
-        await deleteDoc(doc(db, category, id));
-      } catch (err) {
-        console.error(err);
-      }
+      await deleteDoc(doc(db, "transactions", id));
     });
   });
 }
 
-// ---------------- Helpers ----------------
-function capitalize(str) {
-  return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
-// ---------------- Filters & Sorting ----------------
-entryFilter.addEventListener("change", () => {
-  currentCategory = entryFilter.value;
-  updateSortFields(currentCategory);
-  renderEntries();
-});
-
-sortField.addEventListener("change", renderEntries);
-sortOrder.addEventListener("change", renderEntries);
-
+// ---------------- Sort fields ----------------
 function updateSortFields(category) {
   sortField.innerHTML = "";
-  let fields = ["date", "amount"];
-  if (category === "incomes") fields.push("source");
-  if (category === "expenses") fields.push("category");
-  if (category === "savings") fields.push("mode");
-  if (category === "transactions") fields.push("person", "type");
+
+  const fields = ["date", "amount", "person", "type"];
+
   fields.forEach((f) => {
     const opt = document.createElement("option");
     opt.value = f;
-    opt.textContent = capitalize(f);
+    opt.textContent = f.charAt(0).toUpperCase() + f.slice(1);
     sortField.appendChild(opt);
   });
+
   sortField.value = "date";
 }
 
@@ -260,7 +233,8 @@ menuButton?.addEventListener("click", () => {
   sidebar.classList.toggle("-translate-x-full");
   overlay.classList.toggle("hidden");
 });
+
 overlay?.addEventListener("click", () => {
   sidebar.classList.add("-translate-x-full");
   overlay.classList.add("hidden");
-});  in this i only want recent transatons of transactions
+});
