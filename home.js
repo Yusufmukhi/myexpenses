@@ -218,7 +218,7 @@ function updateSortFields(category) {
     const opt = document.createElement("option");
     opt.value = f;
     opt.textContent = f.charAt(0).toUpperCase() + f.slice(1);
-    sortField.appendChild(opt);
+    sortField.appendChild(opt);  // <-- FIXED
   });
 
   sortField.value = "date";
